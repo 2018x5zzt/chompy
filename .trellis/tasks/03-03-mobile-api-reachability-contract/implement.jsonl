@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared coding standards"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component conventions"}
+{"file": "mobile/src/services/api.ts", "reason": "T007 key context"}
+{"file": "mobile/src/constants/index.ts", "reason": "T007 key context"}
+{"file": "mobile/app.config.js", "reason": "T007 key context"}
+{"file": "backend/app/api/images.py", "reason": "T007 key context"}

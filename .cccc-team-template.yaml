@@ -1,0 +1,305 @@
+# CCCC Team Template: Tri-Model + Implementer (4-Agent Pipeline)
+#
+# This template defines a reusable 4-agent team configuration
+# combining the CCG tri-model pattern with Trellis spec injection.
+#
+# Team Structure:
+#   claude-1 (Foreman)  - Orchestration, planning, quality gate
+#   claude-2 (Peer)     - Code implementation with Trellis spec injection
+#   codex-1  (Peer)     - Backend expert: analysis, security, performance
+#   gemini-1 (Peer)     - Frontend expert: UI/UX, accessibility, design
+#
+# Usage:
+#   1. Create actor profiles in CCCC Web UI (Settings > Actor Profiles)
+#   2. When creating a new group, add actors with profile_id references
+#   3. Or import this as a group template
+#
+# Actor Profile Configurations (create these in CCCC Web UI):
+#
+# Profile: ccg-foreman
+#   runtime: claude
+#   runner: pty
+#   command: [claude, --dangerously-skip-permissions]
+#   submit: enter
+#
+# Profile: ccg-implementer
+#   runtime: claude
+#   runner: pty
+#   command: [claude, --dangerously-skip-permissions]
+#   submit: enter
+#
+# Profile: ccg-backend-expert
+#   runtime: codex
+#   runner: pty
+#   command: [codex, -c, "shell_environment_policy.inherit=all", --dangerously-bypass-approvals-and-sandbox, --search]
+#   submit: enter
+#
+# Profile: ccg-frontend-expert
+#   runtime: gemini
+#   runner: pty
+#   command: [gemini, --yolo]
+#   submit: enter
+
+kind: cccc.group_template
+v: 1
+title: "CCG Tri-Model + Implementer Pipeline"
+topic: "4-agent team: Claude orchestrates, Claude implements (Trellis), Codex backend, Gemini frontend"
+
+actors:
+  - id: claude-1
+    title: ""
+    runtime: claude
+    runner: pty
+    command: [claude, --dangerously-skip-permissions]
+    submit: enter
+    enabled: true
+
+  - id: claude-2
+    title: "Claude Implementer"
+    runtime: claude
+    runner: pty
+    command: [claude, --dangerously-skip-permissions]
+    submit: enter
+    enabled: true
+
+  - id: codex-1
+    title: "Codex Backend"
+    runtime: codex
+    runner: pty
+    command: [codex, -c, "shell_environment_policy.inherit=all", --dangerously-bypass-approvals-and-sandbox, --search]
+    submit: enter
+    enabled: true
+
+  - id: gemini-1
+    title: "Gemini Frontend"
+    runtime: gemini
+    runner: pty
+    command: [gemini, --yolo]
+    submit: enter
+    enabled: true
+
+settings:
+  # Messaging
+  default_send_to: foreman
+
+  # Terminal transcript (all actors can read each other for cross-review)
+  terminal_transcript_visibility: all
+  terminal_transcript_notify_tail: true
+  terminal_transcript_notify_lines: 20
+
+  # Level 1: Nudge automation
+  nudge_after_seconds: 300
+  reply_required_nudge_after_seconds: 300
+  attention_ack_nudge_after_seconds: 600
+  unread_nudge_after_seconds: 900
+  nudge_digest_min_interval_seconds: 120
+  nudge_max_repeats_per_obligation: 3
+  nudge_escalate_after_repeats: 2
+
+  # Level 2: Session automation
+  actor_idle_timeout_seconds: 600
+  keepalive_delay_seconds: 120
+  keepalive_max_per_actor: 3
+  silence_timeout_seconds: 600
+
+  # Level 3: Help nudge
+  help_nudge_interval_seconds: 600
+  help_nudge_min_messages: 10
+
+automation:
+  version: 3
+  rules:
+    # Foreman stand-up every 15 min
+    - id: standup
+      enabled: true
+      scope: group
+      to: ["@foreman"]
+      trigger:
+        kind: interval
+        every_seconds: 900
+      action:
+        kind: notify
+        priority: normal
+        title: "Foreman Stand-up"
+        snippet_ref: standup
+
+    # Claude-2 implementer guidance every 30 min
+    - id: peer-claude2-guidance
+      enabled: true
+      scope: personal
+      owner_actor_id: claude-2
+      to: [claude-2]
+      trigger:
+        kind: interval
+        every_seconds: 1800
+      action:
+        kind: notify
+        priority: normal
+        title: "Claude-2 Implementer Guidance"
+        snippet_ref: claude2_guidance
+
+    # Codex backend expert guidance every 30 min
+    - id: peer-codex-guidance
+      enabled: true
+      scope: personal
+      owner_actor_id: codex-1
+      to: [codex-1]
+      trigger:
+        kind: interval
+        every_seconds: 1800
+      action:
+        kind: notify
+        priority: normal
+        title: "Codex Backend Expert Guidance"
+        snippet_ref: codex_guidance
+
+    # Gemini frontend expert guidance every 30 min
+    - id: peer-gemini-guidance
+      enabled: true
+      scope: personal
+      owner_actor_id: gemini-1
+      to: [gemini-1]
+      trigger:
+        kind: interval
+        every_seconds: 1800
+      action:
+        kind: notify
+        priority: normal
+        title: "Gemini Frontend Expert Guidance"
+        snippet_ref: gemini_guidance
+
+    # Cross-review checkpoint every 60 min
+    - id: cross-review-reminder
+      enabled: true
+      scope: group
+      to: ["@foreman"]
+      trigger:
+        kind: interval
+        every_seconds: 3600
+      action:
+        kind: notify
+        priority: normal
+        title: "Cross-Review Check"
+        snippet_ref: cross_review
+
+  snippets:
+    standup: |
+      {{interval_minutes}} minutes passed. Foreman alignment checkpoint for {{group_title}}.
+
+      1. ROUTING CHECK:
+         - New tasks from user? Decompose by domain:
+           * Frontend/UI/BLE → analysis by gemini-1, impl by claude-2
+           * Backend/API/ML/Docker → analysis by codex-1, impl by claude-2
+           * Architecture/integration → handle yourself
+         - Are peers idle? Check Context for next tasks to assign.
+
+      2. PROGRESS CHECK:
+         - Ask @peers for status on active work.
+         - Any blockers? Escalate to user if needed.
+         - Update Context milestones/tasks with progress.
+
+      3. QUALITY GATE:
+         - Any completed work pending cross-review?
+         - Backend changes → send to codex-1 for review
+         - Frontend changes → send to gemini-1 for review
+         - Check against PROJECT.md and Trellis specs before accepting.
+
+      4. PIPELINE STATUS:
+         - Current phase? (Research/Planning/Implementation/Review/Fix/Verify)
+         - Any phase transitions needed?
+         - If a major decision is unclear, ask the user.
+
+      5. TRELLIS SYNC:
+         - Is .current-task set correctly?
+         - Are .jsonl context files up to date for claude-2?
+
+      Keep communication concise. Use cccc_message_send for all coordination.
+
+    claude2_guidance: |
+      You are claude-2, the IMPLEMENTER for {{group_title}}.
+
+      Your domain: Code implementation, refactoring, documentation, test writing.
+
+      Key advantages:
+      - You receive Trellis spec injection via hooks — read all injected context carefully
+      - You have full file-system write permission
+      - You are the ONLY actor that should write production code
+
+      Rules:
+      - Only work on tasks assigned by the Foreman (claude-1).
+      - Follow ALL injected Trellis specs — they define project coding standards.
+      - Read prd.md thoroughly before implementing.
+      - Run lint and typecheck before reporting completion.
+      - Report completion and blockers via cccc_message_send to @foreman.
+      - Send a summary of all changed files when done.
+      - Do NOT make architectural decisions — flag them to @foreman.
+      - If codex-1 or gemini-1 send you prototype code, treat it as reference only — refactor to match project standards.
+
+      Check your inbox (cccc_inbox_list) for new assignments.
+
+    codex_guidance: |
+      You are codex-1, the BACKEND EXPERT for {{group_title}}.
+
+      Your domain: Python FastAPI, PostgreSQL, LLM workflow pipelines, Docker, API design, security, performance.
+
+      Roles by pipeline phase:
+      - Research: Explore backend codebase, identify patterns and constraints
+      - Planning: Review backend architecture proposals, flag risks
+      - Review: Audit backend code changes for security, performance, correctness
+      - Prototype: Provide code prototypes/suggestions (claude-2 does actual implementation)
+
+      Rules:
+      - Only work on tasks assigned by the Foreman (claude-1).
+      - Report completion and blockers via cccc_message_send to @foreman.
+      - When reviewing code, use severity levels: Critical / Major / Minor / Suggestion.
+      - If you see frontend issues, flag them to @foreman (don't fix them yourself).
+      - Your code output is treated as prototype/reference — claude-2 will refactor it.
+      - Follow backend/ directory structure.
+      - All code must be Docker-compatible.
+
+      Check your inbox (cccc_inbox_list) for new assignments.
+
+    gemini_guidance: |
+      You are gemini-1, the FRONTEND EXPERT for {{group_title}}.
+
+      Your domain: React Native + Expo mobile app, UI components, BLE integration (react-native-ble-plx), user experience, screens, navigation, accessibility.
+
+      Roles by pipeline phase:
+      - Research: Explore frontend codebase, identify UI patterns and constraints
+      - Planning: Review frontend architecture proposals, suggest UX improvements
+      - Review: Audit frontend code for accessibility, design consistency, UX quality
+      - Prototype: Provide code prototypes/suggestions (claude-2 does actual implementation)
+
+      Rules:
+      - Only work on tasks assigned by the Foreman (claude-1).
+      - Report completion and blockers via cccc_message_send to @foreman.
+      - When reviewing code, use severity levels: Critical / Major / Minor / Suggestion.
+      - If you see backend issues, flag them to @foreman (don't fix them yourself).
+      - Your code output is treated as prototype/reference — claude-2 will refactor it.
+      - Follow mobile/ directory structure.
+      - Ensure cross-platform compatibility (iOS + Android).
+
+      Check your inbox (cccc_inbox_list) for new assignments.
+
+    cross_review: |
+      Cross-review checkpoint for {{group_title}}.
+
+      Check if any recent code changes need cross-review:
+
+      1. BACKEND CHANGES (git diff backend/):
+         - If changes exist, send to codex-1 for security/performance review
+         - Ask codex-1: any Critical issues?
+
+      2. FRONTEND CHANGES (git diff mobile/):
+         - If changes exist, send to gemini-1 for UX/accessibility review
+         - Ask gemini-1: any Critical issues?
+
+      3. SHARED/API CONTRACT CHANGES:
+         - If API interfaces changed, BOTH codex-1 and gemini-1 must review
+         - Ensure frontend and backend stay in sync
+
+      4. RESOLUTION:
+         - Critical > 0: assign fix to claude-2
+         - All clear: update task status in Context
+
+      This is a quality gate — do not skip it.

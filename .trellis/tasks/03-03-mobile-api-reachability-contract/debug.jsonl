@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared coding standards"}
+{"file": ".claude/commands/trellis/check-frontend.md", "reason": "Frontend check spec"}
+{"file": "mobile/src/services/api.ts", "reason": "T007 key context"}
+{"file": "mobile/src/constants/index.ts", "reason": "T007 key context"}
+{"file": "mobile/app.config.js", "reason": "T007 key context"}
+{"file": "backend/app/api/images.py", "reason": "T007 key context"}
