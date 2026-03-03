@@ -21,6 +21,18 @@ Not implemented yet:
 3. History data lifecycle (real source, persistence, sync policy).
 4. Real LLM vision diagnostic workflow (diagnostics endpoint is still deterministic mock behavior).
 
+## 1.1 Execution Status Snapshot (2026-03-03 23:48 CST)
+
+Current execution state (repository + delivery):
+1. GitHub sync: root commit `574bb2c` has been pushed to `origin/main`.
+2. Trellis current task pointer: `.trellis/tasks/03-03-mobile-api-reachability-contract`.
+3. Completed delivery items:
+   - Mobile API base URL environmentization.
+   - Upload contract unification to JSON (`imageBase64 + contentType`) with legacy multipart path removed.
+   - Frontend upload 400/413 branch handling.
+   - Hardware-facing docs and migration runbook publication.
+4. Next execution item prepared: `T008` (real-device BLE + E2E evidence collection), currently pending hardware execution window.
+
 ## 2. Runtime Architecture
 
 ```text
@@ -67,13 +79,17 @@ Feature-level status matrix:
 - `backend/app/main.py`
   - Mounts static uploads and exposes API routers.
 
-## 5. Verification Evidence (This Iteration)
+## 5. Validation Record (Executed)
 
-Validated on 2026-03-03 (CST):
+Validated on 2026-03-03 (CST), latest rerun at 23:48:
 1. `cd mobile && npx tsc --noEmit` -> pass.
 2. `cd backend && pytest -q tests/test_app.py` -> `14 passed`.
 3. `cd backend && ruff check app tests` -> pass.
 4. `cd backend && mypy app` -> pass.
+5. `./.trellis/scripts/task.sh validate .trellis/tasks/03-03-mobile-api-reachability-contract` -> pass (`implement/check/debug` all green).
+6. Cross-review evidence:
+   - Upload contract quick review verdict: pass (backend cross-review, no Critical/Major/Minor).
+   - Upload validator hardening re-review verdict: pass (forged JPEG/WEBP invalid payload checks returning 400).
 
 ## 6. Delivery Readiness Gates
 
